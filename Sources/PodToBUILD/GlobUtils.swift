@@ -121,7 +121,8 @@ public class Glob: Collection {
 
         var results = [String]()
         var parts = pattern.components(separatedBy: "**")
-        let firstPart = parts.removeFirst()
+//        let firstPart = parts.removeFirst()
+        var firstPart = parts.removeFirst()
         var lastPart = parts.joined(separator: "**")
 
         let fileManager = FileManager.default
@@ -129,6 +130,9 @@ public class Glob: Collection {
         var directories: [String]
 
         do {
+            if (firstPart.isEmpty) {
+                firstPart = "."
+            }
             directories = try fileManager.subpathsOfDirectory(atPath: firstPart).compactMap { subpath in
                 let fullPath = NSString(string: firstPart).appendingPathComponent(subpath)
                 var isDirectory = ObjCBool(false)
@@ -261,7 +265,7 @@ extension BazelGlobChunk: Equatable {
         default: return false
         }
     }
-    
+
     func hasSuffix(_ suffix: String) -> Bool {
         switch self {
         case .Wild, .DotStarWild, .DirWild:
@@ -392,7 +396,7 @@ extension Sequence where Iterator.Element == BazelGlobChunk {
             }
         }
     }
-    
+
     var bazelString: String {
         return self.reduce("") { (acc, x) in
             switch x {

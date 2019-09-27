@@ -246,7 +246,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
         // TODO: Handle multiplatform overrides of requiresArc
         self.requiresArc = (fallbackSpec ^* ComposedSpec.lens.fallback(PodSpec.lens.liftOntoPodSpec(PodSpec.lens.requiresArc))) ?? .left(true)
         self.publicHeaders = (fallbackSpec ^* ComposedSpec.lens.fallback(liftToAttr(PodSpec.lens.publicHeaders))).map{ Set($0) }
-    
+
         let podName = GetBuildOptions().podName
         self.name = computeLibName(rootSpec: rootSpec, spec: spec, podName:
                 podName, isSplitDep: isSplitDep, sourceType: sourceType)
@@ -296,7 +296,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
 
         // Build out header files
         let getHeaderDirHeaders = {
-            () -> AttrSet<Set<String>> in 
+            () -> AttrSet<Set<String>> in
             guard !headerDirectoryName.isEmpty else {
                 return AttrSet<Set<String>>.empty
             }
@@ -324,9 +324,16 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
                 HeaderFileTypes).map{ Set($0) } <>
             extractFiles(fromPattern: preservePaths, includingFileTypes:
                 HeaderFileTypes).map{ Set($0) }
+
+        let podSupportHeaders = AttrSet<[String]>(
+                basic: [PodSupportSystemPublicHeaderDir + "**/*"],
+                multi: MultiPlatform.empty)
+        let allExcludesWithoutPodSupport = allExcludes <> podSupportHeaders
+
         self.headers = GlobNode(
             include: allSpecHeaders,
-            exclude: extractFiles(fromPattern: allExcludes,
+//            exclude: extractFiles(fromPattern: allExcludes,
+                exclude: extractFiles(fromPattern: allExcludesWithoutPodSupport,
                 includingFileTypes: HeaderFileTypes).map{ Set($0) })
 
         self.nonArcSrcs = GlobNode.empty
@@ -408,7 +415,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
         let multiios = deps.multi.ios ?? [String]()
         let multiosx = deps.multi.osx ?? [String]()
         let multitvos = deps.multi.tvos ?? [String]()
-        
+
         return Array(Set(basic + multiios + multiosx + multitvos))
     }
 
@@ -424,7 +431,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
         }
         return externalName
     }
-    
+
     public func toSkylark() -> SkylarkNode {
         let options = GetBuildOptions()
 
@@ -439,7 +446,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
         var libArguments = [SkylarkFunctionArgument]()
 
         libArguments.append(nameArgument)
-        
+
         let enableModulesSkylark = SkylarkFunctionArgument.named(name: "enable_modules",
                                                           value: enableModules ? .int(1) : .int(0))
         libArguments.append(enableModulesSkylark)
@@ -463,7 +470,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
                 return target is ObjcLibrary
             }.map { ($0 + "_hdrs").toSkylark() }
         }
-       
+
         let podSupportHeaders = GlobNode(include: AttrSet<Set<String>>(basic: [PodSupportSystemPublicHeaderDir + "**/*"]),
                                                          exclude: AttrSet<Set<String>>.empty).toSkylark()
         if lib.isTopLevelTarget {
@@ -477,7 +484,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
                     .named(name: "visibility", value: ["//visibility:public"].toSkylark()),
                     ]
                 ))
-            
+
         } else {
             inlineSkylark.append(.functionCall(
                 name: "filegroup",
@@ -507,7 +514,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
                 ))
         }
 
-        if lib.includes.count > 0 { 
+        if lib.includes.count > 0 {
             inlineSkylark.append(.functionCall(
                 name: "gen_includes",
                 arguments: [
@@ -535,7 +542,7 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
                              lib.name))
              }
         }
-        
+
         if !lib.sourceFiles.include.isEmpty {
             libArguments.append(.named(
                 name: "srcs",
@@ -626,13 +633,13 @@ public struct ObjcLibrary: BazelTarget, UserConfigurable, SourceExcludable {
 
         var allDeps: SkylarkNode = SkylarkNode.empty
         if !lib.deps.isEmpty {
-            allDeps = lib.deps.sorted(by: (<)).toSkylark() 
+            allDeps = lib.deps.sorted(by: (<)).toSkylark()
         }
         if lib.includes.count > 0 {
             allDeps = allDeps .+. [":\(name)_includes"].toSkylark()
         }
 
-        if allDeps.isEmpty == false { 
+        if allDeps.isEmpty == false {
             libArguments.append(.named(
                 name: "deps",
                 value: allDeps

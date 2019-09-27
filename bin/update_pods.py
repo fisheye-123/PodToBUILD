@@ -280,7 +280,7 @@ def new_pod_repository(name,
             podspec_url = None,
             strip_prefix = "",
             user_options = [],
-            install_script = None, 
+            install_script = None,
             inhibit_warnings = False,
             trace = False,
             enable_modules = True,
@@ -398,15 +398,17 @@ def _vendorizeBazelExtensionsIfNeeded():
     current_dir = os.path.dirname(os.path.realpath(__file__))
     rules_pods_root = os.path.dirname(current_dir)
     install_root = os.path.dirname(rules_pods_root)
-    if os.path.basename(install_root) == "external":
-        bazel_extension_dir = os.path.join(rules_pods_root, "BazelExtensions")
-        pods_dir = SRC_ROOT + "/Vendor"
-        rules_pods_root =  os.path.join(pods_dir, "rules_pods")
-        vendor_path =  os.path.join(rules_pods_root, "BazelExtensions")
-        if os.path.isdir(rules_pods_root):
-            shutil.rmtree(rules_pods_root)
-        os.makedirs(rules_pods_root)
-        shutil.copytree(bazel_extension_dir, vendor_path)
+
+    # always generate vendor/rules_pods
+    # if os.path.basename(install_root) == "external":
+    bazel_extension_dir = os.path.join(rules_pods_root, "BazelExtensions")
+    pods_dir = SRC_ROOT + "/Vendor"
+    rules_pods_root =  os.path.join(pods_dir, "rules_pods")
+    vendor_path =  os.path.join(rules_pods_root, "BazelExtensions")
+    if os.path.isdir(rules_pods_root):
+        shutil.rmtree(rules_pods_root)
+    os.makedirs(rules_pods_root)
+    shutil.copytree(bazel_extension_dir, vendor_path)
 
 def main():
     parser = argparse.ArgumentParser()
