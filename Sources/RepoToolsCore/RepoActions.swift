@@ -480,7 +480,8 @@ public enum RepoActions {
         // KVOController-1.1.0
         let testURL = fetchOptions.url.lowercased()
         guard testURL.contains("github") else { return nil }
-        let components = testURL.components(separatedBy: "/")
+//        let components = testURL.components(separatedBy: "/")
+        let components = fetchOptions.url.components(separatedBy: "/")
         guard components[components.count - 2] == "archive" else {
             return nil
         }
