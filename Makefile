@@ -62,6 +62,19 @@ build-test: test-impl
 
 # Run the integration tests a few times. We want to make sure output is working
 # and stable.
+debug-spm: CONFIG = debug
+debug-spm: SWIFT_OPTS= --configuration $(CONFIG) -Xswiftc -static-stdlib
+debug-spm: build-impl-spm
+
+build-example: EXAMPLE=Examples/PINCache.podspec.json
+build-example: CONFIG = debug
+build-example: debug-spm
+	@ditto .build/$(CONFIG)/Compiler bin/Compiler
+	@ditto .build/$(CONFIG)/RepoTools bin/RepoTools
+	stat $(EXAMPLE) || exit 1
+	bin/Compiler $(EXAMPLE)
+
+
 integration-test: release
 	for i in $$(seq 1 10); do ./IntegrationTests/RunTests.sh; done
 
@@ -102,7 +115,6 @@ TESTED_BAZEL_VERSION=0.25.2
 # Make a binary archive of PodToBUILD with the official github cli `hub`
 github_release:
 	@which hub || (echo "this command relies on github cli" && exit 1)
-	@git diff --quiet || echo "Dirty tree" && exit 1
 	@git checkout master
 	@git pull --rebase origin master
 	@echo "creating release: $(TESTED_BAZEL_VERSION)-($(shell git rev-parse --short HEAD)"
